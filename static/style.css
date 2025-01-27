@@ -1,0 +1,148 @@
+body {
+    font-family: "Arial", sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    background-color: #f4f4f4;
+  }
+  
+  #container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+  }
+  
+  #map {
+    width: 70%;
+    height: 100vh;
+  }
+  
+  #menu {
+    width: 30%;
+    background-color: #fff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #header {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #4285f4;
+    color: #fff;
+  }
+  
+  #logo {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+  }
+  
+  h2 {
+    margin: 0;
+    font-size: 1.5em;
+  }
+  
+  #login-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    padding: 10px 20px;
+    background-color: #4285f4;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  #login-button img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+  
+  #user-info {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  #user-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  #user-name {
+    font-size: 1em;
+    color: #333;
+  }
+  
+  #places-section {
+    padding: 20px;
+  }
+  
+  h3 {
+    font-size: 1.2em;
+    color: #333;
+    margin-top: 0;
+  }
+  
+  #places-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .transport-modes {
+    display: inline-flex;
+    margin-left: 10px;
+    gap: 5px;
+  }
+
+  .transport-modes button {
+    padding: 5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  .transport-modes button:hover {
+    transform: scale(1.2);
+  }
+
+  #places-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  #places-list li:hover {
+    background-color: #f0f0f0;
+  }
+  .delete-button {
+    background-color: #ff4d4d; /* 빨간색 배경 */
+    color: white; /* 흰색 글씨 */
+    border: none; /* 테두리 제거 */
+    padding: 5px 10px; /* 패딩 */
+    margin-left: 10px; /* 왼쪽 여백 */
+    cursor: pointer; /* 마우스 오버 시 커서 변경 */
+    border-radius: 5px; /* 둥근 모서리 */
+    font-size: 0.9em; /* 폰트 크기 */
+  }
+  
+  .delete-button:hover {
+    background-color: #cc0000; /* 마우스 오버 시 더 어두운 빨간색 */
+  }

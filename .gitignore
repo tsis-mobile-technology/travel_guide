@@ -169,3 +169,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Local History
+.env
+client_secret.json
+travel_guide.db
+gainworld-app-1-93b8e0feff27.json
+static/script copy.js
+static/script.old.js
