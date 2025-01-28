@@ -9,6 +9,38 @@ let currentLocationMarker = null;
 let directionsService = null;
 let directionsRenderer = null;
 let watchId = null;
+let currentPolyline = null;
+// 메뉴 토글 상태 관리
+let isMenuVisible = true;
+
+// 메뉴 토글 초기화 함수
+function initializeMenuToggle() {
+    const menu = document.getElementById('menu');
+    const mapContainer = document.getElementById('map');
+    
+    // 토글 버튼 생성
+    const toggleButton = document.createElement('button');
+    toggleButton.id = 'toggle-menu';
+    toggleButton.innerHTML = '☰';
+    document.body.appendChild(toggleButton);  // body에 직접 추가하여 항상 보이도록 함
+    
+    // 클릭 이벤트 처리
+    toggleButton.addEventListener('click', () => {
+        isMenuVisible = !isMenuVisible;
+        menu.classList.toggle('hidden');
+        
+        // 버튼 아이콘 변경
+        toggleButton.innerHTML = isMenuVisible ? '☰' : '☰';
+        
+        // 지도 리사이즈 트리거
+        setTimeout(() => {
+            google.maps.event.trigger(map, 'resize');
+            if (markers.size > 0) {
+                fitMapToBounds();
+            }
+        }, 300);
+    });
+}
 
 // Google Maps 초기화
 async function initMap() {
@@ -19,7 +51,6 @@ async function initMap() {
     map = new Map(document.getElementById("map"), {
         center: { lat: 37.5665, lng: 126.978 },
         zoom: 13,
-        mapId: 'google_map_id_here'  // Google Cloud Console에서 생성한 Map ID
     });
 
     // Directions 서비스 초기화
@@ -113,72 +144,93 @@ async function updateCurrentLocation(position) {
     }
 }
 
-// 위치 추적 에러 처리
+// 위치 오류 처리
 function handleLocationError(error) {
-    console.error("위치 추적 에러:", error);
+    let message = '';
     switch(error.code) {
         case error.PERMISSION_DENIED:
-            alert("위치 추적 권한이 거부되었습니다.");
+            message = '위치 정보 접근 권한이 거부되었습니다.';
             break;
         case error.POSITION_UNAVAILABLE:
-            alert("위치 정보를 사용할 수 없습니다.");
+            message = '현재 위치를 가져올 수 없습니다.';
             break;
         case error.TIMEOUT:
-            alert("위치 정보 요청이 시간 초과되었습니다.");
+            message = '위치 정보 요청이 시간 초과되었습니다.';
             break;
         default:
-            alert("알 수 없는 오류가 발생했습니다.");
+            message = '알 수 없는 오류가 발생했습니다.';
             break;
     }
+    alert(message);
 }
 
-// 경로 계산 및 표시 함수 개선
+// 좌표 유효성 검사 함수 추가
+function isValidCoordinate(coord) {
+    return coord && !isNaN(coord.lat) && !isNaN(coord.lng) &&
+           coord.lat >= -90 && coord.lat <= 90 &&
+           coord.lng >= -180 && coord.lng <= 180;
+}
+
+// 좌표 정규화 함수
+function normalizeCoordinate(coord) {
+    return {
+        lat: parseFloat(coord.lat),
+        lng: parseFloat(coord.lng)
+    };
+}
+
+// 경로 계산 및 표시 함수 수정
 async function calculateAndDisplayRoute(destination) {
+    // 기존 직선이 있다면 제거
+    if (currentPolyline) {
+        currentPolyline.setMap(null);
+        currentPolyline = null;
+    }
+
     if (!currentLocationMarker) {
         alert("현재 위치를 확인할 수 없습니다.");
         return;
     }
 
-    // 출발지와 목적지 좌표 확인 로깅
-    console.log('출발지:', currentLocationMarker.position);
-    console.log('목적지:', destination);
+    const origin = normalizeCoordinate(currentLocationMarker.position);
+    const dest = normalizeCoordinate(destination);
+
+    if (!isValidCoordinate(origin) || !isValidCoordinate(dest)) {
+        console.error("유효하지 않은 좌표:", { origin, destination });
+        alert("유효하지 않은 좌표입니다.");
+        return;
+    }
 
     const request = {
-        origin: currentLocationMarker.position,
-        destination: destination,
+        origin: new google.maps.LatLng(origin.lat, origin.lng),
+        destination: new google.maps.LatLng(dest.lat, dest.lng),
         travelMode: google.maps.TravelMode.DRIVING,
-        // 대체 경로도 검색
         provideRouteAlternatives: true,
-        // 경로 제한 완화
-        unitSystem: google.maps.UnitSystem.METRIC,
-        // 웨이포인트 최적화
-        optimizeWaypoints: true
+        region: 'KR',
+        unitSystem: google.maps.UnitSystem.METRIC
     };
 
     try {
-        // 먼저 직선 거리 계산
-        const distance = google.maps.geometry.spherical.computeDistanceBetween(
-            new google.maps.LatLng(currentLocationMarker.position.lat, currentLocationMarker.position.lng),
-            new google.maps.LatLng(destination.lat, destination.lng)
-        );
-
-        // 직선 거리가 너무 가깝거나 먼 경우 처리
-        if (distance < 10) { // 10미터 미만
-            infoWindow.setContent(
-                `<div style="padding: 10px;">
-                    <h3>목적지가 너무 가깝습니다</h3>
-                    <p>현재 위치와 목적지가 거의 동일합니다.</p>
-                </div>`
-            );
-            infoWindow.setPosition(destination);
-            infoWindow.open(map);
-            return;
-        }
+        // 일단 직선으로 연결
+        currentPolyline = new google.maps.Polyline({
+            path: [origin, dest],
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.5,
+            strokeWeight: 2,
+            map: map
+        });
 
         const result = await directionsService.route(request);
+        
+        // 경로를 찾았으면 직선 제거
+        if (currentPolyline) {
+            currentPolyline.setMap(null);
+            currentPolyline = null;
+        }
+        
         directionsRenderer.setDirections(result);
         
-        // 경로 정보 표시
         const route = result.routes[0].legs[0];
         infoWindow.setContent(
             `<div style="padding: 10px;">
@@ -189,59 +241,87 @@ async function calculateAndDisplayRoute(destination) {
                 <p>도착: ${route.end_address}</p>
             </div>`
         );
-        infoWindow.setPosition(destination);
+        infoWindow.setPosition(dest);
         infoWindow.open(map);
 
-        // 경로가 표시된 영역으로 지도 이동
         const bounds = new google.maps.LatLngBounds();
-        bounds.extend(currentLocationMarker.position);
-        bounds.extend(destination);
+        bounds.extend(origin);
+        bounds.extend(dest);
         map.fitBounds(bounds);
 
     } catch (error) {
         console.error("경로 계산 에러:", error);
         
-        // 오류 종류에 따른 다른 메시지 표시
-        let errorMessage = "경로를 계산할 수 없습니다.";
-        if (error.code === "ZERO_RESULTS") {
-            errorMessage = "경로를 찾을 수 없습니다. 다른 이동 수단을 시도해보세요.";
-            
-            // 직선 거리와 방향 표시
-            const directLine = new google.maps.Polyline({
-                path: [
-                    currentLocationMarker.position,
-                    destination
-                ],
-                geodesic: true,
-                strokeColor: '#FF0000',
-                strokeOpacity: 0.5,
-                strokeWeight: 2,
-                map: map
-            });
+        // 에러 상황에서 직선은 유지
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+            new google.maps.LatLng(origin.lat, origin.lng),
+            new google.maps.LatLng(dest.lat, dest.lng)
+        );
 
-            // 5초 후 직선 제거
-            setTimeout(() => {
-                directLine.setMap(null);
-            }, 5000);
-        } else if (error.code === "OVER_QUERY_LIMIT") {
-            errorMessage = "잠시 후 다시 시도해주세요.";
-        }
-
-        // 오류 메시지를 InfoWindow로 표시
         infoWindow.setContent(
             `<div style="padding: 10px;">
-                <h3>경로 안내 불가</h3>
-                <p>${errorMessage}</p>
+                <h3>직선 거리 정보</h3>
+                <p>직선 거리: ${(distance/1000).toFixed(2)} km</p>
+                <p>* 경로 안내를 찾을 수 없어 직선 거리로 표시합니다.</p>
+                <p>* 다른 이동 수단을 시도해보세요.</p>
             </div>`
         );
-        infoWindow.setPosition(destination);
+        infoWindow.setPosition(dest);
         infoWindow.open(map);
+
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(origin);
+        bounds.extend(dest);
+        map.fitBounds(bounds);
+
+        // 10초 후 직선 제거
+        setTimeout(() => {
+            if (currentPolyline) {
+                currentPolyline.setMap(null);
+                currentPolyline = null;
+            }
+        }, 10000);
     }
 }
 
+// 모든 이동 수단으로 경로 시도
+async function tryAllTravelModes(origin, destination) {
+    const modes = [
+        google.maps.TravelMode.DRIVING,
+        google.maps.TravelMode.TRANSIT,
+        google.maps.TravelMode.WALKING,
+        google.maps.TravelMode.BICYCLING
+    ];
+
+    for (const mode of modes) {
+        const request = {
+            origin: origin,
+            destination: destination,
+            travelMode: mode,
+            region: 'KR'
+        };
+
+        try {
+            const result = await directionsService.route(request);
+            console.log(`${mode} 경로 찾음!`);
+            return { mode, result };
+        } catch (error) {
+            console.log(`${mode} 경로 실패:`, error);
+            continue;
+        }
+    }
+
+    return null;
+}
 
 // 이동 수단 변경 함수 개선
 function changeTravelMode(mode) {
+    // 직선이 있다면 제거
+    if (currentPolyline) {
+        currentPolyline.setMap(null);
+        currentPolyline = null;
+    }
+
     if (!directionsRenderer.getDirections()) {
         return;
     }
@@ -308,31 +388,28 @@ function addPlaceToList(place) {
         placesList.add(placeKey);
         
         const listItem = document.createElement("li");
-        listItem.textContent = place.name;
-        listItem.dataset.placeId = place.place_id;
         
-        // 클릭 시 경로 계산
-        listItem.addEventListener("click", () => {
-            const destination = { lat: place.latitude, lng: place.longitude };
-            calculateAndDisplayRoute(destination);
-            map.panTo(destination);
-            map.setZoom(15);
-        });
+        // 장소 이름 추가
+        const placeName = document.createElement("div");
+        placeName.className = "place-name";
+        placeName.textContent = place.name;
+        listItem.appendChild(placeName);
         
-        // 이동 수단 선택 버튼 추가
+        // 이동 수단 버튼 컨테이너
         const transportModes = document.createElement("div");
         transportModes.className = "transport-modes";
         
         const modes = [
-            { icon: "🚗", mode: google.maps.TravelMode.DRIVING },
-            { icon: "🚶", mode: google.maps.TravelMode.WALKING },
-            { icon: "🚲", mode: google.maps.TravelMode.BICYCLING },
-            { icon: "🚌", mode: google.maps.TravelMode.TRANSIT }
+            { icon: "🚗", mode: google.maps.TravelMode.DRIVING, label: "운전" },
+            { icon: "🚶", mode: google.maps.TravelMode.WALKING, label: "도보" },
+            { icon: "🚲", mode: google.maps.TravelMode.BICYCLING, label: "자전거" },
+            { icon: "🚌", mode: google.maps.TravelMode.TRANSIT, label: "대중교통" }
         ];
         
-        modes.forEach(({ icon, mode }) => {
+        modes.forEach(({ icon, mode, label }) => {
             const button = document.createElement("button");
-            button.textContent = icon;
+            button.innerHTML = `${icon} <span class="sr-only">${label}</span>`;
+            button.title = label;
             button.addEventListener("click", (e) => {
                 e.stopPropagation();
                 changeTravelMode(mode);
@@ -344,19 +421,25 @@ function addPlaceToList(place) {
         
         // Delete 버튼
         const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Delete";
-        deleteButton.classList.add("delete-button");
+        deleteButton.textContent = "삭제";
+        deleteButton.className = "delete-button";
         deleteButton.addEventListener("click", async (event) => {
             event.stopPropagation();
             await removePlace(place.place_id);
             placesList.delete(placeKey);
             listItem.remove();
             removeMarkerByPosition(place.latitude, place.longitude);
-            // 경로가 표시되어 있다면 제거
-            directionsRenderer.setDirections({ routes: [] });
         });
         
         listItem.appendChild(deleteButton);
+        
+        // 클릭 이벤트 - 지도 이동
+        listItem.addEventListener("click", () => {
+            const destination = { lat: place.latitude, lng: place.longitude };
+            calculateAndDisplayRoute(destination);
+            map.panTo(destination);
+            map.setZoom(15);
+        });
         
         const placesListElement = document.getElementById('places-list');
         if (placesListElement) {
@@ -445,6 +528,12 @@ function removeMarkerByPosition(lat, lng) {
 }
 
 function clearPlacesList() {
+    // 직선이 있다면 제거
+    if (currentPolyline) {
+        currentPolyline.setMap(null);
+        currentPolyline = null;
+    }
+
     placesList.clear();
     // 모든 마커 제거
     markers.forEach(marker => {
@@ -564,6 +653,12 @@ async function addNewPlace(placeData) {
 }
 
 async function removePlace(placeId) {
+    // 직선이 있다면 제거
+    if (currentPolyline) {
+        currentPolyline.setMap(null);
+        currentPolyline = null;
+    }
+
     const response = await fetch(`/remove_place/${placeId}`, {
         method: "DELETE",
     });
@@ -572,6 +667,112 @@ async function removePlace(placeId) {
         console.error("Error removing place:", response.status);
         alert("Failed to remove place. Please try again.");
     }
+}
+
+// DOM 요소 초기화와 이벤트 리스너 설정을 하나의 함수로 관리
+function initializeUI() {
+    // 로그인 버튼 이벤트 리스너
+    const loginButton = document.getElementById("login-button");
+    if (loginButton) {
+        loginButton.addEventListener("click", () => {
+            window.location.href = "/login";
+        });
+    }
+
+    // 로그아웃 버튼 이벤트 리스너
+    const logoutButton = document.getElementById("logout-button");
+    if (logoutButton) {
+        logoutButton.addEventListener("click", () => {
+            window.location.href = "/logout";
+        });
+    }
+
+    // 메뉴 토글 초기화
+    initializeMenuToggle();
+}
+
+// 현재 위치 버튼 생성 및 초기화
+function initializeLocationButton() {
+    const mapContainer = document.getElementById('map');
+    
+    // 현재 위치 버튼 생성
+    const locationButton = document.createElement('button');
+    locationButton.id = 'current-location-button';
+    locationButton.title = '현재 위치로 이동';
+    locationButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+    `;
+    
+    mapContainer.appendChild(locationButton);
+    
+    // 클릭 이벤트 처리
+    locationButton.addEventListener('click', () => {
+        locationButton.classList.add('loading');
+        getCurrentLocation();
+    });
+}
+
+// 현재 위치 가져오기
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const currentPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                
+                // 지도 이동
+                map.panTo(currentPosition);
+                map.setZoom(15);
+                
+                // 현재 위치 마커 업데이트
+                updateCurrentLocationMarker(currentPosition);
+                
+                // 로딩 상태 제거
+                document.getElementById('current-location-button').classList.remove('loading');
+            },
+            (error) => {
+                console.error('Error getting location:', error);
+                handleLocationError(error);
+                document.getElementById('current-location-button').classList.remove('loading');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        alert('이 브라우저에서는 위치 정보를 사용할 수 없습니다.');
+        document.getElementById('current-location-button').classList.remove('loading');
+    }
+}
+
+// 현재 위치 마커 업데이트
+async function updateCurrentLocationMarker(position) {
+    const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
+    
+    if (currentLocationMarker) {
+        currentLocationMarker.map = null;
+    }
+    
+    // 현재 위치 핀 스타일
+    const pinElement = new PinElement({
+        background: "#4285F4",
+        borderColor: "#fff",
+        glyphColor: "#fff"
+    });
+
+    currentLocationMarker = new AdvancedMarkerElement({
+        map,
+        position,
+        title: "현재 위치",
+        content: pinElement.element,
+    });
 }
 
 // 이벤트 리스너 설정
@@ -583,15 +784,29 @@ document.getElementById('logout-button').addEventListener('click', () => {
     window.location.href = '/logout';
 });
 
+// 화면 크기 변경 시 메뉴 위치 조정
+window.addEventListener('resize', () => {
+    const menu = document.getElementById('menu');
+    const toggleButton = document.getElementById('toggle-menu');
+    
+    // 화면이 특정 크기 이하일 때 메뉴 자동으로 숨기기
+    if (window.innerWidth < 768) {
+        menu.classList.add('hidden');
+        isMenuVisible = false;
+    }
+});
+
 // 페이지 언로드 시 정리
 window.addEventListener('beforeunload', cleanup);
 
 // 초기화
 window.initMap = initMap;
 
-// window.onload 수정
+// window.onload에 추가
 window.onload = async () => {
     console.log('Window loaded');
+    initializeUI();
     await fetchUserInfo();
-    await initMap(); // fetchStarredPlaces는 initMap 내에서 호출됨
+    await initMap();
+    initializeLocationButton();  // 현재 위치 버튼 초기화 추가
 };

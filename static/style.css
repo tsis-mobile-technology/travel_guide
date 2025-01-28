@@ -13,32 +13,84 @@ body {
   }
   
   #map {
-    width: 70%;
+    width: 100%;
     height: 100vh;
-  }
+    position: relative;
+}
   
-  #menu {
-    width: 30%;
-    background-color: #fff;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+#menu {
+  width: 300px;
+  background-color: #ffffff;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1001;
+}
+
+  #menu.hidden {
+    transform: translateX(-300px);  /* 너비와 동일한 값으로 변경 */
+  }
+
+  #menu.hidden + #toggle-menu {
+    right: -50px;  /* 메뉴가 숨겨졌을 때의 위치 */
+  }
+
+/* 토글 버튼 */
+#toggle-menu {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  z-index: 1002;
+  background-color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+}
+
+#toggle-menu:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.05);
+}
+
+  #toggle-menu i {
+    font-size: 24px;
   }
   
   #header {
+    background-color: #4285f4;
+    padding: 15px 20px;
+    color: white;
     display: flex;
     align-items: center;
-    padding: 10px;
-    background-color: #4285f4;
-    color: #fff;
-  }
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
   
-  #logo {
-    width: 50px;
-    height: 50px;
-    margin-right: 15px;
-  }
+#logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+#header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
   
   h2 {
     margin: 0;
@@ -66,28 +118,40 @@ body {
     margin-right: 10px;
   }
   
-  #user-info {
-    display: flex;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #ddd;
-  }
+/* 사용자 정보 영역 */
+#user-info {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #f8f9fa;
+}
+
+#user-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+#user-name {
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
+}
   
-  #user-photo {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 10px;
-  }
-  
-  #user-name {
-    font-size: 1em;
-    color: #333;
-  }
-  
-  #places-section {
-    padding: 20px;
-  }
+/* 장소 목록 섹션 */
+#places-section {
+  padding: 20px;
+}
+
+#places-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
   
   h3 {
     font-size: 1.2em;
@@ -98,51 +162,132 @@ body {
   #places-list {
     list-style: none;
     padding: 0;
-  }
-  
-  .transport-modes {
-    display: inline-flex;
-    margin-left: 10px;
-    gap: 5px;
-  }
+    margin: 0;
+}
 
-  .transport-modes button {
-    padding: 5px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 16px;
-  }
-
-  .transport-modes button:hover {
-    transform: scale(1.2);
-  }
-
-  #places-list li {
+#places-list li {
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    margin-bottom: 5px;
-    background-color: #f9f9f9;
-    border-radius: 4px;
-    cursor: pointer;
-  }
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+/* 장소 이름 */
+.place-name {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+/* 교통수단 아이콘 컨테이너 */
+.transport-modes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.transport-modes button {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.transport-modes button:hover {
+  background-color: #f0f0f0;
+  border-color: #bbb;
+}
 
   #places-list li:hover {
-    background-color: #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* 삭제 버튼 */
+.delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  align-self: flex-end;
+}
+
+.delete-button:hover {
+  background-color: #c82333;
+}
+
+/* 로그아웃 버튼 */
+#logout-button {
+  margin: 16px 20px;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#logout-button:hover {
+  background-color: #e9ecef;
+  border-color: #bbb;
+}
+
+/* 반응형 처리 */
+@media (max-width: 768px) {
+  #menu {
+      width: 280px;
   }
-  .delete-button {
-    background-color: #ff4d4d; /* 빨간색 배경 */
-    color: white; /* 흰색 글씨 */
-    border: none; /* 테두리 제거 */
-    padding: 5px 10px; /* 패딩 */
-    margin-left: 10px; /* 왼쪽 여백 */
-    cursor: pointer; /* 마우스 오버 시 커서 변경 */
-    border-radius: 5px; /* 둥근 모서리 */
-    font-size: 0.9em; /* 폰트 크기 */
+}
+#current-location-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1002;
+  background-color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 44px;
+  height: 44px;
+}
+
+#current-location-button:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.05);
+}
+
+#current-location-button img {
+  width: 24px;
+  height: 24px;
+}
+
+#current-location-button.loading {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+      transform: rotate(0deg);
   }
-  
-  .delete-button:hover {
-    background-color: #cc0000; /* 마우스 오버 시 더 어두운 빨간색 */
+  to {
+      transform: rotate(360deg);
   }
+}

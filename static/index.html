@@ -1,38 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Travel Guide</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://accounts.google.com/gsi/client" async></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=google_api_key&libraries=places&map_id=google_map_id&loading=async" async></script>
 </head>
 <body>
     <div id="container">
-        <div id="map"></div>
-
         <div id="menu">
             <div id="header">
-                <img id="logo" src="/static/logo.png" alt="Travel Guide Logo"> <h2>Travel Guide</h2>
+                <img id="logo" src="/static/logo.png" alt="Travel Guide Logo">
+                <h2>Travel Guide</h2>
             </div>
             
-            <button id="login-button" style="display: none;">
-                <img src="/static/google_logo.png" alt="Google Logo">
-                Sign in with Google
-            </button>
-            <button id="logout-button">Logout</button>
             <div id="user-info" style="display: none;">
                 <img id="user-photo" src="" alt="User Photo">
                 <span id="user-name"></span>
             </div>
-
+            
             <div id="places-section">
                 <h3>가고 싶은 장소</h3>
                 <ul id="places-list"></ul>
             </div>
+
+            <button id="login-button" style="display: none;">Login with Google</button>
+            <button id="logout-button">Logout</button>
         </div>
+        
+        <div id="map"></div>
     </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for gainworld-travel-guide-app on 2025-01-28T11:47:14+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "gainworld-travel-guide-app"
+primary_region = "nrt"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  FLASK_APP = "app.py"
+  FLASK_ENV = "production"
+  PORT = "5000"
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

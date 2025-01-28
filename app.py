@@ -42,11 +42,22 @@ def get_db_connection():
     return conn
 
 # Google OAuth 흐름 설정
+# app.py의 get_google_flow 함수 수정
 def get_google_flow():
-    flow = Flow.from_client_secrets_file(
-        client_secrets_file="client_secret.json",  # Google console 에서 생성한 인증정보 json
+    client_config = {
+        "web": {
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+            "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "redirect_uris": [os.environ.get("GOOGLE_REDIRECT_URI", "https://gainworld-travel-guide-app/callback")]
+        }
+    }
+    
+    flow = Flow.from_client_config(
+        client_config=client_config,
         scopes=SCOPES,
-        redirect_uri=os.getenv('GOOGLE_REDIRECT_URI'),
     )
     return flow
 
@@ -298,4 +309,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
