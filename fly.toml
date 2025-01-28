@@ -12,6 +12,7 @@ primary_region = "nrt"
 [env]
   FLASK_APP = "app.py"
   FLASK_ENV = "production"
+  GOOGLE_REDIRECT_URI = "https://gainworld-travel-guide-app.fly.dev/callback"
   PORT = "5000"
 
 [http_service]
